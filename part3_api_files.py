@@ -1,49 +1,27 @@
 # ============================================================
 # Part 3: File I/O, APIs & Exception Handling
 # Theme : Product Explorer & Error-Resilient Logger
-# Author: Gaurav Anand Shukla  |  ID: BITSoM_BA_25111017
+# Author: Gaurav Anand Shukla | ID: BITSoM_BA_25111017
 # File  : part3_api_files.py
 # ============================================================
-# This script fetches real product data from a public API,
-# processes it, saves results to files, and handles all
-# failure scenarios gracefully — like a production app.
+# pip install requests  (if not already installed)
 # ============================================================
 
 import requests
 import datetime
 
 # ============================================================
-# GLOBAL ERROR LOGGER — used throughout the entire script
+# TASK 1 — File Read & Write Basics (6 marks)
 # ============================================================
 
-def log_error(function_name, error_message):
-    """
-    Append a timestamped error entry to error_log.txt in append mode.
-    Format: [YYYY-MM-DD HH:MM:SS] ERROR in <function>: <message>
-    """
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    entry = f"[{timestamp}] ERROR in {function_name}: {error_message}\n"
-    with open("error_log.txt", "a", encoding="utf-8") as log_file:
-        log_file.write(entry)
+print("\n" + "=" * 55)
+print(" TASK 1 — File Read & Write Basics")
+print("=" * 55)
 
+notes_file = "python_notes.txt"
 
-# Clear the log at the start of a fresh run (entries accumulate below)
-with open("error_log.txt", "w", encoding="utf-8") as _f:
-    pass
-
-
-# ============================================================
-# TASK 1 — File Read & Write Basics  (6 marks)
-# ============================================================
-
-print("\n" + "=" * 65)
-print("  TASK 1 — File Read & Write Basics")
-print("=" * 65)
-
-# ─── Part A: Write ──────────────────────────────────────────
-
-# Five required lines written using write mode ('w')
-notes_to_write = [
+# --- Part A: Write ---
+lines_to_write = [
     "Topic 1: Variables store data. Python is dynamically typed.",
     "Topic 2: Lists are ordered and mutable.",
     "Topic 3: Dictionaries store key-value pairs.",
@@ -51,177 +29,137 @@ notes_to_write = [
     "Topic 5: Exception handling prevents crashes.",
 ]
 
-with open("python_notes.txt", "w", encoding="utf-8") as f:
-    for line in notes_to_write:
+# Write mode — creates / overwrites the file
+with open(notes_file, "w", encoding="utf-8") as f:
+    for line in lines_to_write:
         f.write(line + "\n")
-print("File written successfully.")
+print(f"\nFile written successfully. ({len(lines_to_write)} lines written)")
 
-# Two additional lines appended using append mode ('a')
-extra_notes = [
-    "Topic 6: Functions promote code reuse and readability.",
-    "Topic 7: Modules and packages extend Python's built-in capabilities.",
+# Append two more lines
+extra_lines = [
+    "Topic 6: Functions promote code reuse and modularity.",
+    "Topic 7: Modules allow you to organise code across files.",
 ]
-with open("python_notes.txt", "a", encoding="utf-8") as f:
-    for line in extra_notes:
+with open(notes_file, "a", encoding="utf-8") as f:
+    for line in extra_lines:
         f.write(line + "\n")
 print("Lines appended.")
 
-# ─── Part B: Read ───────────────────────────────────────────
+# --- Part B: Read ---
+with open(notes_file, "r", encoding="utf-8") as f:
+    all_lines = [line.rstrip("\n") for line in f]
 
-print("\n--- Reading python_notes.txt ---")
+print(f"\nAll lines (numbered):")
+for i, line in enumerate(all_lines, start=1):
+    print(f"  {i}. {line}")
 
-with open("python_notes.txt", "r", encoding="utf-8") as f:
-    lines = f.readlines()
+print(f"\nTotal number of lines: {len(all_lines)}")
 
-# 1. Print each line numbered, stripping the trailing newline (\n)
-for i, line in enumerate(lines, start=1):
-    print(f"  {i}. {line.rstrip()}")
-
-# 2. Total line count
-print(f"\nTotal lines in file: {len(lines)}")
-
-# 3. Keyword search (case-insensitive)
-keyword = input("\nEnter a keyword to search in the notes: ").strip()
-matched = [line.rstrip() for line in lines if keyword.lower() in line.lower()]
-
+# Keyword search (case-insensitive)
+keyword = "python"
+print(f"\nLines containing keyword '{keyword}':")
+matched = [line for line in all_lines if keyword.lower() in line.lower()]
 if matched:
-    print(f"\nLines containing '{keyword}':")
     for line in matched:
         print(f"  → {line}")
 else:
-    print(f"\nNo lines found containing '{keyword}'. Try a different keyword.")
-
+    print("  No matches found.")
 
 # ============================================================
-# TASK 2 — API Integration  (8 marks)
+# TASK 2 — API Integration (8 marks)
 # ============================================================
 
-print("\n" + "=" * 65)
-print("  TASK 2 — API Integration")
-print("=" * 65)
+print("\n" + "=" * 55)
+print(" TASK 2 — API Integration")
+print("=" * 55)
 
 BASE_URL = "https://dummyjson.com/products"
 
-# ─── Step 1: Fetch 20 products and display a formatted table ──
-print("\n--- Step 1: Fetching 20 products from DummyJSON ---")
+
+def log_error(context, error_msg):
+    """Write a timestamped error entry to error_log.txt (append mode)."""
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry = f"[{timestamp}] ERROR in {context}: {error_msg}\n"
+    with open("error_log.txt", "a", encoding="utf-8") as ef:
+        ef.write(entry)
+    print(f"  [Logged] {entry.strip()}")
+
+
+# Step 1 — Fetch and display 20 products
+print("\nStep 1: Fetching 20 products from DummyJSON API...")
+products = []
 try:
     response = requests.get(f"{BASE_URL}?limit=20", timeout=5)
-    if response.status_code == 200:
-        products_20 = response.json()["products"]
-        print(f"\n  {'ID':<5} {'Title':<32} {'Category':<18} {'Price':>9} {'Rating':>8}")
-        print("  " + "-" * 76)
-        for p in products_20:
-            print(f"  {p['id']:<5} {p['title'][:31]:<32} {p['category'][:17]:<18}"
-                  f" ${p['price']:>8.2f} {p['rating']:>8.2f}")
-    else:
-        print(f"  HTTP Error {response.status_code} while fetching products.")
-        log_error("fetch_products", f"HTTPError — {response.status_code}")
+    response.raise_for_status()
+    data = response.json()
+    products = data.get("products", [])
+
+    print(f"\n{'ID':<5} {'Title':<30} {'Category':<18} {'Price':>8} {'Rating':>7}")
+    print("-" * 72)
+    for p in products:
+        print(f"  {p['id']:<4} {p['title']:<30} {p['category']:<18} "
+              f"${p['price']:>8.2f} {p['rating']:>7.2f}")
 
 except requests.exceptions.ConnectionError as e:
-    print("  Connection failed. Please check your internet.")
     log_error("fetch_products", f"ConnectionError — {e}")
-except requests.exceptions.Timeout:
-    print("  Request timed out. Try again later.")
-    log_error("fetch_products", "Timeout — request exceeded 5 s")
+except requests.exceptions.Timeout as e:
+    log_error("fetch_products", f"Timeout — {e}")
 except Exception as e:
-    print(f"  Unexpected error: {e}")
     log_error("fetch_products", str(e))
 
-# ─── Step 2: Filter rating ≥ 4.5, sort by price descending ──
-print("\n--- Step 2: Products with rating ≥ 4.5 (sorted by price, descending) ---")
-try:
-    response = requests.get(f"{BASE_URL}?limit=20", timeout=5)
-    if response.status_code == 200:
-        products_20 = response.json()["products"]
-        filtered = [p for p in products_20 if p["rating"] >= 4.5]
-        filtered.sort(key=lambda x: x["price"], reverse=True)
-        if filtered:
-            print(f"  {'Title':<38} {'Price':>10} {'Rating':>8}")
-            print("  " + "-" * 58)
-            for p in filtered:
-                print(f"  {p['title'][:37]:<38} ${p['price']:>9.2f} {p['rating']:>8.2f}")
-        else:
-            print("  No products with rating ≥ 4.5 found.")
-    else:
-        print(f"  HTTP Error {response.status_code}.")
-        log_error("filter_products", f"HTTPError — {response.status_code}")
+# Step 2 — Filter & Sort (rating >= 4.5, descending price)
+print("\nStep 2: Filtered products (rating ≥ 4.5), sorted by price descending:")
+high_rated = [p for p in products if p.get("rating", 0) >= 4.5]
+high_rated.sort(key=lambda p: p["price"], reverse=True)
+for p in high_rated:
+    print(f"  {p['title']:<30} ${p['price']:.2f}  ★{p['rating']}")
 
-except requests.exceptions.ConnectionError as e:
-    print("  Connection failed. Please check your internet.")
-    log_error("filter_products", f"ConnectionError — {e}")
-except requests.exceptions.Timeout:
-    print("  Request timed out. Try again later.")
-    log_error("filter_products", "Timeout")
-except Exception as e:
-    print(f"  Unexpected error: {e}")
-    log_error("filter_products", str(e))
-
-# ─── Step 3: Search by category — laptops ────────────────────
-print("\n--- Step 3: All products in the 'laptops' category ---")
+# Step 3 — Search by category: laptops
+print("\nStep 3: Fetching all products in category 'laptops'...")
 try:
     response = requests.get(f"{BASE_URL}/category/laptops", timeout=5)
-    if response.status_code == 200:
-        laptops = response.json()["products"]
-        print(f"  Found {len(laptops)} laptop(s):\n")
-        for p in laptops:
-            print(f"  • {p['title']:<44} ${p['price']:.2f}")
-    else:
-        print(f"  HTTP Error {response.status_code}.")
-        log_error("fetch_laptops", f"HTTPError — {response.status_code}")
-
+    response.raise_for_status()
+    laptops = response.json().get("products", [])
+    for p in laptops:
+        print(f"  {p['title']:<35} ${p['price']:.2f}")
 except requests.exceptions.ConnectionError as e:
-    print("  Connection failed. Please check your internet.")
     log_error("fetch_laptops", f"ConnectionError — {e}")
-except requests.exceptions.Timeout:
-    print("  Request timed out. Try again later.")
-    log_error("fetch_laptops", "Timeout")
+except requests.exceptions.Timeout as e:
+    log_error("fetch_laptops", f"Timeout — {e}")
 except Exception as e:
-    print(f"  Unexpected error: {e}")
     log_error("fetch_laptops", str(e))
 
-# ─── Step 4: Simulated POST request ──────────────────────────
-print("\n--- Step 4: POST Request — Simulated Add Product ---")
-new_product_payload = {
+# Step 4 — POST request (simulated)
+print("\nStep 4: Sending POST request to add a new product (simulated)...")
+new_product = {
     "title":       "My Custom Product",
     "price":       999,
     "category":    "electronics",
-    "description": "A product I created via API",
+    "description": "A product I created via API"
 }
 try:
-    response = requests.post(f"{BASE_URL}/add", json=new_product_payload, timeout=5)
-    print(f"  Status Code : {response.status_code}")
-    print(f"  Response    : {response.json()}")
-    print("  Note: DummyJSON is a mock API — no data is actually stored server-side.")
-
+    response = requests.post(f"{BASE_URL}/add", json=new_product, timeout=5)
+    response.raise_for_status()
+    print("  Full response from server:")
+    print(f"  {response.json()}")
 except requests.exceptions.ConnectionError as e:
-    print("  Connection failed. Please check your internet.")
-    log_error("post_product", f"ConnectionError — {e}")
-except requests.exceptions.Timeout:
-    print("  Request timed out. Try again later.")
-    log_error("post_product", "Timeout")
+    log_error("add_product", f"ConnectionError — {e}")
+except requests.exceptions.Timeout as e:
+    log_error("add_product", f"Timeout — {e}")
 except Exception as e:
-    print(f"  Unexpected error: {e}")
-    log_error("post_product", str(e))
-
+    log_error("add_product", str(e))
 
 # ============================================================
-# TASK 3 — Exception Handling  (7 marks)
+# TASK 3 — Exception Handling (7 marks)
 # ============================================================
 
-print("\n" + "=" * 65)
-print("  TASK 3 — Exception Handling")
-print("=" * 65)
+print("\n" + "=" * 55)
+print(" TASK 3 — Exception Handling")
+print("=" * 55)
 
-# ─── Part A: Guarded Calculator ──────────────────────────────
-
+# --- Part A: Guarded Calculator ---
 def safe_divide(a, b):
-    """
-    Divide a by b safely.
-    Returns:
-      - float result of a / b on success
-      - 'Error: Cannot divide by zero'  on ZeroDivisionError
-      - 'Error: Invalid input types'    on TypeError
-    """
+    """Return a / b with guarded exception handling."""
     try:
         return a / b
     except ZeroDivisionError:
@@ -229,22 +167,14 @@ def safe_divide(a, b):
     except TypeError:
         return "Error: Invalid input types"
 
+print("\nPart A — safe_divide tests:")
+for a, b in [(10, 2), (10, 0), ("ten", 2)]:
+    result = safe_divide(a, b)
+    print(f"  safe_divide({a!r}, {b!r}) → {result}")
 
-print("\n--- Part A: safe_divide ---")
-print(f"  safe_divide(10, 2)     = {safe_divide(10, 2)}")
-print(f"  safe_divide(10, 0)     = {safe_divide(10, 0)}")
-print(f"  safe_divide('ten', 2)  = {safe_divide('ten', 2)}")
-
-
-# ─── Part B: Guarded File Reader ─────────────────────────────
-
+# --- Part B: Guarded File Reader ---
 def read_file_safe(filename):
-    """
-    Try to open and read the given file.
-    - Returns full content as a string on success.
-    - Catches FileNotFoundError with a helpful message.
-    - The finally block ALWAYS runs whether the file exists or not.
-    """
+    """Read a file safely, catching FileNotFoundError."""
     try:
         with open(filename, "r", encoding="utf-8") as f:
             content = f.read()
@@ -255,125 +185,98 @@ def read_file_safe(filename):
     finally:
         print("  File operation attempt complete.")
 
-
-print("\n--- Part B: read_file_safe ---")
-
-print("  Testing 'python_notes.txt'  (should succeed):")
+print("\nPart B — read_file_safe tests:")
+print(f"\n  Reading 'python_notes.txt' (should succeed):")
 content = read_file_safe("python_notes.txt")
 if content:
-    preview = "\n".join(content.splitlines()[:2])
-    print(f"  Preview:\n    {preview}\n    ...")
+    print(f"  [Read {len(content)} characters successfully]")
 
-print("\n  Testing 'ghost_file.txt'  (should fail gracefully):")
+print(f"\n  Reading 'ghost_file.txt' (should fail gracefully):")
 read_file_safe("ghost_file.txt")
 
+# --- Part C: Robust API Calls — already wrapped above in Task 2 ---
+print("\nPart C — All API calls in Task 2 are already wrapped in try-except blocks.")
+print("  (ConnectionError, Timeout, and any unexpected Exception are handled.)")
 
-# ─── Part C: Robust API Calls ────────────────────────────────
-# Every requests.get() and requests.post() call in Task 2 is
-# already wrapped in try-except blocks that handle:
-#   • ConnectionError  → "Connection failed. Please check your internet."
-#   • Timeout          → "Request timed out. Try again later."
-#   • Exception        → prints the error message
-# This fully satisfies Part C.
-print("\n--- Part C: Robust API Calls ---")
-print("  ✓ All API calls in Task 2 are wrapped in try-except blocks.")
-print("  ✓ Handles: ConnectionError, Timeout, and any unexpected Exception.")
-print("  ✓ timeout=5 is passed to every requests call.")
-
-
-# ─── Part D: Input Validation Loop ───────────────────────────
-print("\n--- Part D: Input Validation Loop ---")
-print("  Validates product ID (1–100) before making an API call.\n")
-
+# --- Part D: Input Validation Loop ---
+print("\nPart D — Product lookup loop (enter 'quit' to exit):")
 while True:
-    user_input = input("Enter a product ID to look up (1–100), or 'quit' to exit: ").strip()
-
-    # Exit condition
+    user_input = input("  Enter a product ID to look up (1–100), or 'quit' to exit: ").strip()
     if user_input.lower() == "quit":
         print("  Exiting product lookup.")
         break
 
-    # Guard 1: must be a valid integer
+    # Validate: must be an integer in range 1–100
     try:
         product_id = int(user_input)
     except ValueError:
         print("  ⚠ Warning: Please enter a valid integer between 1 and 100.")
         continue
 
-    # Guard 2: must be within range 1–100
     if not (1 <= product_id <= 100):
-        print("  ⚠ Warning: ID must be between 1 and 100. Please try again.")
+        print("  ⚠ Warning: ID must be between 1 and 100.")
         continue
 
-    # Valid ID — make the API call
+    # Make the API call
     try:
-        response = requests.get(f"{BASE_URL}/{product_id}", timeout=5)
-        if response.status_code == 200:
-            p = response.json()
-            print(f"  ✓ Found: {p['title']}  |  Price: ${p['price']}")
-        elif response.status_code == 404:
-            print(f"  ✗ Product not found for ID: {product_id}.")
-            log_error("lookup_product",
-                      f"HTTPError — 404 Not Found for product ID {product_id}")
+        resp = requests.get(f"{BASE_URL}/{product_id}", timeout=5)
+        if resp.status_code == 404:
+            print(f"  Product not found (ID {product_id}).")
+            log_error("lookup_product", f"HTTPError — 404 Not Found for product ID {product_id}")
+        elif resp.status_code == 200:
+            prod = resp.json()
+            print(f"  Title : {prod['title']}")
+            print(f"  Price : ${prod['price']:.2f}")
         else:
-            print(f"  ✗ HTTP Error: {response.status_code}")
-            log_error("lookup_product",
-                      f"HTTPError — {response.status_code} for product ID {product_id}")
-
+            print(f"  Unexpected status code: {resp.status_code}")
     except requests.exceptions.ConnectionError as e:
-        print("  Connection failed. Please check your internet.")
         log_error("lookup_product", f"ConnectionError — {e}")
-    except requests.exceptions.Timeout:
-        print("  Request timed out. Try again later.")
-        log_error("lookup_product", f"Timeout for product ID {product_id}")
+    except requests.exceptions.Timeout as e:
+        log_error("lookup_product", f"Timeout — Request timed out. Try again later.")
     except Exception as e:
-        print(f"  Unexpected error: {e}")
         log_error("lookup_product", str(e))
 
-
 # ============================================================
-# TASK 4 — Logging to File  (4 marks)
+# TASK 4 — Logging to File (4 marks)
 # ============================================================
 
-print("\n" + "=" * 65)
-print("  TASK 4 — Logging to File")
-print("=" * 65)
+print("\n" + "=" * 55)
+print(" TASK 4 — Logging to File")
+print("=" * 55)
 
-print("\n  error_log.txt opens in APPEND mode — entries accumulate across runs.")
-print("  Format: [TIMESTAMP] ERROR in <function>: <message>\n")
+# The log_error() function defined in Task 2 already handles all logging.
+# It writes to error_log.txt in append mode with timestamps.
+# Here we intentionally trigger two logged entries to prove the logger works.
 
-# --- Trigger 1: ConnectionError — hit a genuinely unreachable URL ---
-print("--- Trigger 1: ConnectionError (unreachable URL) ---")
+print("\nTriggering two intentional logged errors to prove the logger works...")
+
+# Trigger 1: ConnectionError — unreachable URL
+unreachable_url = "https://this-host-does-not-exist-xyz.com/api"
 try:
-    requests.get("https://this-host-does-not-exist-xyz.com/api", timeout=5)
+    requests.get(unreachable_url, timeout=5)
 except requests.exceptions.ConnectionError as e:
-    print("  Connection failed as expected. Logging to error_log.txt ...")
     log_error("fetch_products", f"ConnectionError — {e}")
 except Exception as e:
-    log_error("fetch_products", str(e))
+    log_error("fetch_products", f"ConnectionError — No connection could be made")
 
-# --- Trigger 2: HTTP 404 — product ID 999 does not exist ---
-# Important: A 404 is NOT a Python exception — detect via response.status_code
-print("\n--- Trigger 2: HTTP 404 (product ID 999 does not exist) ---")
+# Trigger 2: 404 HTTP error for a product ID that doesn't exist
+bad_id = 999
 try:
-    response = requests.get(f"{BASE_URL}/999", timeout=5)
-    if response.status_code != 200:
-        print(f"  HTTP {response.status_code} received. Logging to error_log.txt ...")
-        log_error("lookup_product",
-                  f"HTTPError — {response.status_code} Not Found for product ID 999")
+    resp = requests.get(f"{BASE_URL}/{bad_id}", timeout=5)
+    if resp.status_code != 200:
+        log_error("lookup_product", f"HTTPError — {resp.status_code} Not Found for product ID {bad_id}")
 except requests.exceptions.ConnectionError as e:
     log_error("lookup_product", f"ConnectionError — {e}")
+except requests.exceptions.Timeout as e:
+    log_error("lookup_product", f"Timeout — Request timed out.")
 except Exception as e:
     log_error("lookup_product", str(e))
 
-# --- Read and print the full contents of error_log.txt ---
+# Read and print the full contents of error_log.txt
 print("\n--- Full contents of error_log.txt ---")
 try:
-    with open("error_log.txt", "r", encoding="utf-8") as f:
-        log_content = f.read()
-    if log_content.strip():
-        print(log_content)
-    else:
-        print("  (No errors were logged this run.)")
+    with open("error_log.txt", "r", encoding="utf-8") as ef:
+        log_contents = ef.read()
+    print(log_contents)
 except FileNotFoundError:
-    print("  error_log.txt not found — no errors were logged.")
+    print("  (error_log.txt not found — no errors were logged yet)")
